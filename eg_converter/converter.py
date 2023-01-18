@@ -5,6 +5,7 @@ import sys
 
 from Text2ChakraConverter import *
 from FlexFlow2ChakraConverter import *
+from PyTorch2ChakraConverter import *
 
 def main():
     parser = argparse.ArgumentParser(
@@ -59,6 +60,13 @@ def main():
             required="FlexFlow" in sys.argv,
             help="NPU frequency in MHz"
     )
+    parser.add_argument(
+            "--default_simulated_run_time",
+            type=int,
+            default=None,
+            required="PyTorch" in sys.argv,
+            help="Default simulated_run_time if the duration field is not available"
+    )
     args = parser.parse_args()
 
     if args.input_type == "Text":
@@ -74,6 +82,13 @@ def main():
                 args.input_filename,
                 args.output_filename,
                 args.npu_frequency,
+                args.num_dims)
+        converter.convert()
+    elif args.input_type == "PyTorch":
+        converter = PyTorch2ChakraConverter(
+                args.input_filename,
+                args.output_filename,
+                args.default_simulated_run_time,
                 args.num_dims)
         converter.convert()
     else:
