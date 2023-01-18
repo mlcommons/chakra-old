@@ -4,6 +4,7 @@ import argparse
 import sys
 
 from Text2ChakraConverter import *
+from FlexFlow2ChakraConverter import *
 
 def main():
     parser = argparse.ArgumentParser(
@@ -51,6 +52,13 @@ def main():
             required="Text" in sys.argv,
             help="Number of training passes"
     )
+    parser.add_argument(
+            "--npu_frequency",
+            type=int,
+            default=None,
+            required="FlexFlow" in sys.argv,
+            help="NPU frequency in MHz"
+    )
     args = parser.parse_args()
 
     if args.input_type == "Text":
@@ -60,6 +68,13 @@ def main():
                 args.num_npus,
                 args.num_dims,
                 args.num_passes)
+        converter.convert()
+    elif args.input_type == "FlexFlow":
+        converter = FlexFlow2ChakraConverter(
+                args.input_filename,
+                args.output_filename,
+                args.npu_frequency,
+                args.num_dims)
         converter.convert()
     else:
         print("%s unsupported" % (args.input_type))
