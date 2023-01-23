@@ -105,6 +105,9 @@ class Text2ChakraConverter:
                     or (parallelism_type == "HYBRID_DLRM_ENHANCED"):
                 last_bottom_layer = int(first_line[1])
                 self.convert_hybrid_dlrm(f, num_layers, last_bottom_layer)
+            elif parallelism_type == "HYBRID_TRANSFORMER":
+                options = " ".join(first_line[1:])
+                self.convert_hybrid_transformer(f, num_layers, options)
             else:
                 print("Unsupported parallelism type")
 
@@ -452,3 +455,106 @@ class Text2ChakraConverter:
                             self.add_dep(bwd_ig_comm_node, bwd_ig_comp_node)
                             layers[0].bwd_ig_comm_node = bwd_ig_comm_node
                             encodeMessage(g, bwd_ig_comm_node)
+
+    def convert_hybrid_transformer(self, f, num_layers, options):
+        def break_dimension(model_parallel_npu_group):
+            # TODO
+            return 0
+
+        layers = self.get_layers(f, num_layers)
+        model_parallel_npu_group = int(options.replace("model_parallel_NPU_group: ", ""))
+        model_parallel_boundary = break_dimension(model_parallel_npu_group)
+        for npu_id in range(self.num_npus):
+            output_filename = "%s.%d.eg" % (self.output_filename, npu_id)
+            with open(output_filename, "wb") as g:
+                for i in range(self.num_passes):
+                    # forward pass
+                    for idx, layer in enumerate(layers):
+                        fwd_comp_node = self.get_comp_node(
+                                layer.name, "FWD",
+                                layer.fwd_comp_time)
+                        if idx == 0:
+                            if layer.bwd_wg_comm_node != None:
+                                self.add_dep(fwd_comp_node, layer.bwd_wg_comm_node)
+                            elif layer.bwd_wg_comp_node != None:
+                                self.add_dep(fwd_comp_node, layer.bwd_wg_comp_node)
+                        else:
+                            if layers[idx-1].fwd_comm_node == None:
+                                self.add_dep(fwd_comp_node, layers[idx-1].fwd_comp_node)
+                            else:
+                                self.add_dep(fwd_comp_node, layers[idx-1].fwd_comm_node)
+                            if layer.bwd_wg_comm_node != None:
+                                self.add_dep(fwd_comp_node, layer.bwd_wg_comm_node)
+                            elif layer.bwd_wg_comp_node != None:
+                                self.add_dep(fwd_comp_node, layer.bwd_wg_comp_node)
+                        layer.fwd_comp_node = fwd_comp_node
+                        encodeMessage(g, fwd_comp_node)
+
+                        fwd_comm_node = None
+                        if layer.fwd_comm_type != "NONE":
+                            fwd_comm_node = self.get_coll_comm_node(
+                                    layer.name,
+                                    layer.fwd_comm_type,
+                                    layer.fwd_comm_size)
+                            for j in range(model_parallel_boundary):
+                                fwd_comm_node.involved_dim.append(True)
+                            for j in range(self.num_dims - model_parallel_boundary):
+                                fwd_comm_node.involved_dim.append(False)
+                            layer.fwd_comm_node = fwd_comm_node
+                            self.add_dep(fwd_comm_node, fwd_comp_node)
+                            encodeMessage(g, fwd_comm_node)
+
+                    # backward pass
+                    for idx, layer in enumerate(reversed(layers)):
+                        bwd_ig_comp_node = self.get_comp_node(
+                                layer.name, "BWD_IG",
+                                layer.bwd_ig_comp_time)
+                        if idx == 0:
+                            if fwd_comm_node == None:
+                                self.add_dep(bwd_ig_comp_node, fwd_comp_node)
+                            else:
+                                self.add_dep(bwd_ig_comp_node, fwd_comm_node)
+                        else:
+                            self.add_dep(bwd_ig_comp_node,
+                                    layers[len(layers)-idx].bwd_wg_comp_node)
+                            if layers[len(layers)-idx].bwd_ig_comm_node == None:
+                                self.add_dep(bwd_ig_comp_node,
+                                        layers[len(layers)-idx].bwd_ig_comp_node)
+                            else:
+                                self.add_dep(bwd_ig_comp_node,
+                                        layers[len(layers)-idx].bwd_ig_comm_node)
+                        layer.bwd_ig_comp_node = bwd_ig_comp_node
+                        encodeMessage(g, bwd_ig_comp_node)
+
+                        if layer.bwd_ig_comm_type != "NONE":
+                            bwd_ig_comm_node = self.get_coll_comm_node(
+                                    layer.name,
+                                    layer.bwd_ig_comm_type,
+                                    layer.bwd_ig_comm_size)
+                            for j in range(model_parallel_boundary):
+                                bwd_ig_comm_node.involved_dim.append(True)
+                            for j in range(self.num_dims - model_parallel_boundary):
+                                bwd_ig_comm_node.involved_dim.append(False)
+                            self.add_dep(bwd_ig_comm_node, bwd_ig_comp_node)
+                            layer.bwd_ig_comm_node = bwd_ig_comm_node
+                            encodeMessage(g, bwd_ig_comm_node)
+
+                        bwd_wg_comp_node = self.get_comp_node(
+                                layer.name, "BWD_WG",
+                                layer.bwd_wg_comp_time)
+                        self.add_dep(bwd_wg_comp_node, bwd_ig_comp_node)
+                        layer.bwd_wg_comp_node = bwd_wg_comp_node
+                        encodeMessage(g, bwd_wg_comp_node)
+
+                        if layer.bwd_wg_comm_type != "NONE":
+                            bwd_wg_comm_node = self.get_coll_comm_node(
+                                    layer.name,
+                                    layer.bwd_wg_comm_type,
+                                    layer.bwd_wg_comm_size)
+                            for j in range(model_parallel_boundary):
+                                bwd_wg_comm_node.involved_dim.append(False)
+                            for j in range(self.num_dims - model_parallel_boundary):
+                                bwd_wg_comm_node.involved_dim.append(True)
+                            self.add_dep(bwd_wg_comm_node, bwd_wg_comp_node)
+                            layer.bwd_wg_comm_node = bwd_wg_comm_node
+                            encodeMessage(g, bwd_wg_comm_node)
