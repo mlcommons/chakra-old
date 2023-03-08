@@ -73,27 +73,52 @@ void twoCompNodesDependent(int num_npus, int num_dims) {
   }
 }
 
-void oneCommNodeAllReduce(int num_npus, int num_dims) {
+void oneCommNodeAllReduceSwitchBased(int num_npus, int num_dims) {
   DependencyGraph *dg;
   Node *node;
 
   for (int npu_id = 0; npu_id < num_npus; ++npu_id) {
     dg = new DependencyGraph(getFilename(string(__func__), npu_id));
 
+
     node = dg->addNode(ChakraProtoMsg::COMM_COLL_NODE);
     node->set_name("COMM_COLL_NODE");
-    for (int i = 0; i < num_dims; ++i) {
-      node->add_involved_dim(true);
+    for (int i = 0; i < num_npus; ++i) {
+      node->add_involved_npus(i);
     }
+    node->set_in_switch(true);
     node->set_comm_type(ChakraProtoMsg::ALL_REDUCE);
     node->set_comm_size(65536);
+
+
+    dg->flushEG();
+    delete dg;
+  }
+}
+void oneCommNodeAllReduceE2EBased(int num_npus, int num_dims) {
+  DependencyGraph *dg;
+  Node *node;
+
+  for (int npu_id = 0; npu_id < num_npus; ++npu_id) {
+    dg = new DependencyGraph(getFilename(string(__func__), npu_id));
+
+
+    node = dg->addNode(ChakraProtoMsg::COMM_COLL_NODE);
+    node->set_name("COMM_COLL_NODE");
+    for (int i = 0; i < num_npus; ++i) {
+      node->add_involved_npus(i);
+    }
+    node->set_in_switch(false);
+    node->set_comm_type(ChakraProtoMsg::ALL_REDUCE);
+    node->set_comm_size(65536);
+
 
     dg->flushEG();
     delete dg;
   }
 }
 
-void oneCommNodeAllToAll(int num_npus, int num_dims) {
+void oneCommNodeAllToAllSwitchBased(int num_npus, int num_dims) {
   DependencyGraph *dg;
   Node *node;
 
@@ -102,9 +127,30 @@ void oneCommNodeAllToAll(int num_npus, int num_dims) {
 
     node = dg->addNode(ChakraProtoMsg::COMM_COLL_NODE);
     node->set_name("COMM_COLL_NODE");
-    for (int i = 0; i < num_dims; ++i) {
-      node->add_involved_dim(true);
+    for (int i = 0; i < num_npus; ++i) {
+      node->add_involved_npus(i);
     }
+    node->set_in_switch(true);
+    node->set_comm_type(ChakraProtoMsg::ALL_TO_ALL);
+    node->set_comm_size(65536);
+
+    dg->flushEG();
+    delete dg;
+  }
+}
+void oneCommNodeAllToAllE2EBased(int num_npus, int num_dims) {
+  DependencyGraph *dg;
+  Node *node;
+
+  for (int npu_id = 0; npu_id < num_npus; ++npu_id) {
+    dg = new DependencyGraph(getFilename(string(__func__), npu_id));
+
+    node = dg->addNode(ChakraProtoMsg::COMM_COLL_NODE);
+    node->set_name("COMM_COLL_NODE");
+    for (int i = 0; i < num_npus; ++i) {
+      node->add_involved_npus(i);
+    }
+    node->set_in_switch(false);
     node->set_comm_type(ChakraProtoMsg::ALL_TO_ALL);
     node->set_comm_size(65536);
 
@@ -113,7 +159,7 @@ void oneCommNodeAllToAll(int num_npus, int num_dims) {
   }
 }
 
-void oneCommNodeAllGather(int num_npus, int num_dims) {
+void oneCommNodeAllGatherSwitchBased(int num_npus, int num_dims) {
   DependencyGraph *dg;
   Node *node;
 
@@ -122,9 +168,30 @@ void oneCommNodeAllGather(int num_npus, int num_dims) {
 
     node = dg->addNode(ChakraProtoMsg::COMM_COLL_NODE);
     node->set_name("COMM_COLL_NODE");
-    for (int i = 0; i < num_dims; ++i) {
-      node->add_involved_dim(true);
+    for (int i = 0; i < num_npus; ++i) {
+      node->add_involved_npus(i);
     }
+    node->set_in_switch(true);
+    node->set_comm_type(ChakraProtoMsg::ALL_GATHER);
+    node->set_comm_size(65536);
+
+    dg->flushEG();
+    delete dg;
+  }
+}
+void oneCommNodeAllGatherE2EBased(int num_npus, int num_dims) {
+  DependencyGraph *dg;
+  Node *node;
+
+  for (int npu_id = 0; npu_id < num_npus; ++npu_id) {
+    dg = new DependencyGraph(getFilename(string(__func__), npu_id));
+
+    node = dg->addNode(ChakraProtoMsg::COMM_COLL_NODE);
+    node->set_name("COMM_COLL_NODE");
+    for (int i = 0; i < num_npus; ++i) {
+      node->add_involved_npus(i);
+    }
+    node->set_in_switch(false);
     node->set_comm_type(ChakraProtoMsg::ALL_GATHER);
     node->set_comm_size(65536);
 
@@ -133,7 +200,7 @@ void oneCommNodeAllGather(int num_npus, int num_dims) {
   }
 }
 
-void oneCommNodeReduceScatter(int num_npus, int num_dims) {
+void oneCommNodeReduceScatterSwitchBased(int num_npus, int num_dims) {
   DependencyGraph *dg;
   Node *node;
 
@@ -142,9 +209,30 @@ void oneCommNodeReduceScatter(int num_npus, int num_dims) {
 
     node = dg->addNode(ChakraProtoMsg::COMM_COLL_NODE);
     node->set_name("COMM_COLL_NODE");
-    for (int i = 0; i < num_dims; ++i) {
-      node->add_involved_dim(true);
+    for (int i = 0; i < num_npus; ++i) {
+      node->add_involved_npus(i);
     }
+    node->set_in_switch(true);
+    node->set_comm_type(ChakraProtoMsg::REDUCE_SCATTER);
+    node->set_comm_size(65536);
+
+    dg->flushEG();
+    delete dg;
+  }
+}
+void oneCommNodeReduceScatterE2EBased(int num_npus, int num_dims) {
+  DependencyGraph *dg;
+  Node *node;
+
+  for (int npu_id = 0; npu_id < num_npus; ++npu_id) {
+    dg = new DependencyGraph(getFilename(string(__func__), npu_id));
+
+    node = dg->addNode(ChakraProtoMsg::COMM_COLL_NODE);
+    node->set_name("COMM_COLL_NODE");
+    for (int i = 0; i < num_npus; ++i) {
+      node->add_involved_npus(i);
+    }
+    node->set_in_switch(false);
     node->set_comm_type(ChakraProtoMsg::REDUCE_SCATTER);
     node->set_comm_size(65536);
 
@@ -792,9 +880,9 @@ int main(int argc, char **argv)
 
   options.add_options()
     ("num_npus", "Number of NPUs",
-     cxxopts::value<int>()->default_value("64"))
+     cxxopts::value<int>()->default_value("4"))
     ("num_dims", "Number of dimensions in the network topology",
-     cxxopts::value<int>()->default_value("2"))
+     cxxopts::value<int>()->default_value("1"))
     ;
   auto result = options.parse(argc, argv);
   auto num_npus = result["num_npus"].as<int>();
@@ -804,10 +892,14 @@ int main(int argc, char **argv)
   twoCompNodesIndependent(num_npus, num_dims);
   twoCompNodesDependent(num_npus, num_dims);
 
-  oneCommNodeAllReduce(num_npus, num_dims);
-  oneCommNodeAllToAll(num_npus, num_dims);
-  oneCommNodeAllGather(num_npus, num_dims);
-  oneCommNodeReduceScatter(num_npus, num_dims);
+  oneCommNodeAllReduceSwitchBased(num_npus, num_dims);
+  oneCommNodeAllReduceE2EBased(num_npus, num_dims);
+  oneCommNodeAllToAllSwitchBased(num_npus, num_dims);
+  oneCommNodeAllToAllE2EBased(num_npus, num_dims);
+  oneCommNodeAllGatherSwitchBased(num_npus, num_dims);
+  oneCommNodeAllGatherE2EBased(num_npus, num_dims);
+  oneCommNodeReduceScatterSwitchBased(num_npus, num_dims);
+  oneCommNodeReduceScatterE2EBased(num_npus, num_dims);
 
   for (uint32_t i = 6; i < 17; ++i) {
     commNodesSingleSendSingleRecv(num_npus, num_dims, 1 << i);

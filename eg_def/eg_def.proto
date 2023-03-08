@@ -50,4 +50,6 @@ message Node {
   optional uint32 comm_size = 18;
   optional uint32 comm_tag = 19;
   optional uint32 comm_priority = 20;
+  optional bool in_switch  = 21 [default = false];
+  repeated int32 involved_npus = 22;
 }
