@@ -48,7 +48,7 @@ message Node {
   optional uint32 communicator_id = 15;
   optional uint32 comm_src = 16;
   optional uint32 comm_dst = 17;
-  optional uint32 comm_size = 18;
+  optional uint64 comm_size = 18;
   optional uint32 comm_tag = 19;
   optional uint32 comm_priority = 20;
   optional uint64 callback_after = 21;
