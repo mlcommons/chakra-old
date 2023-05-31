@@ -16,6 +16,7 @@ void ETFeeder::addNode(shared_ptr<ETFeederNode> node) {
 }
 
 void ETFeeder::removeNode(uint64_t node_id) {
+  dep_free_node_id_set_.erase(node_id);
   dep_graph_.erase(node_id);
 
   if (!et_complete_
@@ -31,7 +32,6 @@ bool ETFeeder::hasNodesToIssue() {
 shared_ptr<ETFeederNode> ETFeeder::getNextIssuableNode() {
   if (dep_free_node_queue_.size() != 0) {
     shared_ptr<ETFeederNode> node = dep_free_node_queue_.front();
-    dep_free_node_id_set_.erase(node->getChakraNode()->id());
     dep_free_node_queue_.pop();
     return node;
   } else {
@@ -41,7 +41,6 @@ shared_ptr<ETFeederNode> ETFeeder::getNextIssuableNode() {
 
 void ETFeeder::pushBackIssuableNode(uint64_t node_id) {
   shared_ptr<ETFeederNode> node = dep_graph_[node_id];
-  dep_free_node_id_set_.emplace(node_id);
   dep_free_node_queue_.emplace(node);
 }
 
