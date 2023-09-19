@@ -1,15 +1,15 @@
 #include "et_feeder/et_feeder.h"
+#include <cassert>
 
 using namespace std;
 using namespace Chakra;
 
 ETFeeder::ETFeeder(string filename)
-  : trace_(filename), window_size_(4096), et_complete_(false) {
+    : trace_(filename), window_size_(4096), et_complete_(false) {
   readNextWindow();
 }
 
-ETFeeder::~ETFeeder() {
-}
+ETFeeder::~ETFeeder() {}
 
 void ETFeeder::addNode(shared_ptr<ETFeederNode> node) {
   dep_graph_[node->getChakraNode()->id()] = node;
@@ -18,8 +18,7 @@ void ETFeeder::addNode(shared_ptr<ETFeederNode> node) {
 void ETFeeder::removeNode(uint64_t node_id) {
   dep_graph_.erase(node_id);
 
-  if (!et_complete_
-      && (dep_free_node_queue_.size() < window_size_)) {
+  if (!et_complete_ && (dep_free_node_queue_.size() < window_size_)) {
     readNextWindow();
   }
 }
@@ -46,16 +45,19 @@ void ETFeeder::pushBackIssuableNode(uint64_t node_id) {
 }
 
 shared_ptr<ETFeederNode> ETFeeder::lookupNode(uint64_t node_id) {
-  return dep_graph_[node_id];
+  auto node = dep_graph_.find(node_id);
+  assert(node != dep_graph_.end());
+
+  return node->second;
 }
 
 void ETFeeder::freeChildrenNodes(uint64_t node_id) {
   shared_ptr<ETFeederNode> node = dep_graph_[node_id];
-  for (auto child: node->getChildren()) {
+  for (auto child : node->getChildren()) {
     auto child_chakra = child->getChakraNode();
     for (auto it = child_chakra->mutable_parent()->begin();
-        it != child_chakra->mutable_parent()->end();
-        ++it) {
+         it != child_chakra->mutable_parent()->end();
+         ++it) {
       if (*it == node_id) {
         child_chakra->mutable_parent()->erase(it);
         break;
@@ -70,7 +72,8 @@ void ETFeeder::freeChildrenNodes(uint64_t node_id) {
 
 shared_ptr<ETFeederNode> ETFeeder::readNode() {
   shared_ptr<ETFeederNode> node = make_shared<ETFeederNode>();
-  shared_ptr<ChakraProtoMsg::Node> pkt_msg = make_shared<ChakraProtoMsg::Node>();
+  shared_ptr<ChakraProtoMsg::Node> pkt_msg =
+      make_shared<ChakraProtoMsg::Node>();
 
   if (!trace_.read(*pkt_msg)) {
     return nullptr;
@@ -97,11 +100,12 @@ shared_ptr<ETFeederNode> ETFeeder::readNode() {
 
 void ETFeeder::resolveDep() {
   for (auto it = dep_unresolved_node_set_.begin();
-      it != dep_unresolved_node_set_.end();) {
+       it != dep_unresolved_node_set_.end();) {
     shared_ptr<ETFeederNode> node = *it;
-    vector<uint64_t> dep_unresolved_parent_ids = node->getDepUnresolvedParentIDs();
+    vector<uint64_t> dep_unresolved_parent_ids =
+        node->getDepUnresolvedParentIDs();
     for (auto inner_it = dep_unresolved_parent_ids.begin();
-        inner_it != dep_unresolved_parent_ids.end();) {
+         inner_it != dep_unresolved_parent_ids.end();) {
       auto parent_node = dep_graph_.find(*inner_it);
       if (parent_node != dep_graph_.end()) {
         parent_node->second->addChild(node);
@@ -120,26 +124,28 @@ void ETFeeder::resolveDep() {
 }
 
 void ETFeeder::readNextWindow() {
-  uint32_t num_read = 0;
   do {
-    shared_ptr<ETFeederNode> new_node = readNode();
-    if (new_node == nullptr) {
-      et_complete_ = true;
-      break;
+    if (et_complete_) {
+      // graph read finished, but still no nodes resolved
+      // means the graph is broken
+      assert(false);
     }
-
-    addNode(new_node);
-    ++num_read;
-
+    for (uint32_t num_read = 0; num_read < window_size_; num_read++) {
+      shared_ptr<ETFeederNode> new_node = readNode();
+      if (new_node == nullptr) {
+        et_complete_ = true;
+        break;
+      }
+      addNode(new_node);
+    }
     resolveDep();
-  } while ((num_read < window_size_)
-      || (dep_unresolved_node_set_.size() != 0));
+  } while (dep_unresolved_node_set_.size() != 0);
 
-  for (auto node_id_node: dep_graph_) {
+  for (auto node_id_node : dep_graph_) {
     uint64_t node_id = node_id_node.first;
     shared_ptr<ETFeederNode> node = node_id_node.second;
-    if ((dep_free_node_id_set_.count(node_id) == 0)
-        && (node->getChakraNode()->parent().size() == 0)) {
+    if ((dep_free_node_id_set_.count(node_id) == 0) &&
+        (node->getChakraNode()->parent().size() == 0)) {
       dep_free_node_id_set_.emplace(node_id);
       dep_free_node_queue_.emplace(node);
     }
