@@ -19,10 +19,34 @@ jobs:
         with:
           activate-conda: true
           python-version: 3.7
-      - run: conda install protobuf==3.6.1 setuptools pydot pytorch python-graphviz networkx
+      - run: conda install protobuf==3.8.0 setuptools pydot pytorch python-graphviz networkx
       - run: pip install fbgemm-gpu-cpu
       - run: protoc et_def.proto --proto_path et_def --python_out et_def
       - run: python3 setup.py install
       - run: python3 -m utils.et_generator.et_generator --help
       - run: python3 -m et_visualizer.et_visualizer --help
       - run: python3 -m timeline_visualizer.timeline_visualizer --help
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: make gcc g++ libprotobuf-dev protobuf-compiler
+          version: 1.0
+      - uses: lukka/get-cmake@latest
+      - run: protoc et_def.proto --proto_path et_def --cpp_out et_def
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - uses: s-weigand/setup-conda@v1
+        with:
+          activate-conda: true
+          python-version: 3.7
+      - run: conda install protobuf==3.8.0 setuptools pydot pytorch python-graphviz networkx
+      - run: pip install fbgemm-gpu-cpu
+      - run: protoc et_def.proto --proto_path et_def --python_out et_def
+      - run: python3 setup.py install
+      - run: source ./test/test.sh
