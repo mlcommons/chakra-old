@@ -58,17 +58,6 @@ $ python -m utils.et_generator.et_generator\
 ```
 
 ## Execution Trace Visualizer (et_visualizer)
-This tool visualizes a given execution trace (ET) by converting the ET to a graphviz file.
-A user has to feed the output graphviz file to a graphviz visualizer such as https://dreampuf.github.io/GraphvizOnline/.
-
-You can run this tool with the following command.
-```shell
-$ python -m et_visualizer.et_visualizer\
-    --input_filename <input_filename>\
-    --output_filename <output_filename>
-```
-
-## Execution Trace Visualizer (et_visualizer)
 This tool visualizes a given execution trace (ET) by converting the ET to a graph in various supported formats: PDF, Graphviz (dot), or GraphML.
 The output format is determined by the file extension (postfix) of the output filename.
 For PDF and Graphviz formats, use ".pdf" and ".dot" extensions respectively.
