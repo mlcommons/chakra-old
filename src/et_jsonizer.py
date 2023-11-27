@@ -9,7 +9,7 @@ from chakra.third_party.utils.protolib import (
     decodeMessage as decode_message
 )
 
-from chakra.et_def.et_def_pb2 import (
+from chakra.et_def_pb2 import (
     Node as ChakraNode,
 )
 
