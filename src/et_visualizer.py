@@ -8,7 +8,7 @@ from chakra.third_party.utils.protolib import (
     openFileRd as open_file_rd,
     decodeMessage as decode_message
 )
-from chakra.et_def.et_def_pb2 import Node
+from chakra.et_def_pb2 import Node
 
 
 def main() -> None:
@@ -72,7 +72,7 @@ def main() -> None:
 
         nx.write_graphml(G, args.output_filename)
     else:
-        print("Unknown output file extension. Must be one of pdf, dot, graphml.")
+        raise ValueError("Unsupported file extension. Must be one of: pdf, dot, graphml.")
 
     et.close()
 
