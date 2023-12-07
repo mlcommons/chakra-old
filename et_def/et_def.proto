@@ -145,6 +145,7 @@ message Node {
   IOInfo inputs = 8;
   IOInfo outputs = 9;
   repeated AttributeProto attr = 10;
+  repeated uint64 parent = 11;
 }
 
 message IOInfo {
